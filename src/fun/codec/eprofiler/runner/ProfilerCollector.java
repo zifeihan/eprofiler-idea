@@ -1,5 +1,6 @@
 package fun.codec.eprofiler.runner;
 
+import com.intellij.openapi.components.ProjectComponent;
 import com.intellij.openapi.diagnostic.Logger;
 import fun.codec.eprofiler.runner.calltree.CollectionUtil;
 import fun.codec.eprofiler.runner.calltree.merge.Merge;
@@ -24,32 +25,58 @@ import java.util.concurrent.TimeUnit;
  * @author: echo
  * @create: 2018-12-12 13:06
  */
-public class ProfilerCollector {
+public class ProfilerCollector implements ProjectComponent {
 
-    private static Logger logger = Logger.getInstance(ProfilerExecutor.class);
+    private volatile boolean start;
 
     private static volatile long position;
 
-    private static BlockingQueue<Stack> blockingQueue = new ArrayBlockingQueue<Stack>(100000);
+    private ProfilerCollector.PrintTree printTree;
 
-    private static volatile boolean start;
+    private ProfilerCallTreeWindow profilerCallTreeWindow;
 
-    public static void setStart(boolean start) {
-        position = 0;
-        ProfilerCollector.start = start;
-        ProfilerCallTreeWindow.getRoot().removeAllChildren();
+    private Logger logger = Logger.getInstance(ProfilerExecutor.class);
 
-        if (!start) {
-            //cancel timer
-            PrintTree.timer.cancel();
+    private BlockingQueue<Stack> blockingQueue;
+
+    public ProfilerCollector() {
+        this.blockingQueue = new ArrayBlockingQueue<Stack>(100000);
+    }
+
+    public void setProfilerCallTreeWindow(ProfilerCallTreeWindow treeWindow) {
+        this.profilerCallTreeWindow = treeWindow;
+    }
+
+    public void cleanStackTree() {
+        if (profilerCallTreeWindow != null) {
+            profilerCallTreeWindow.getRoot().removeAllChildren();
         }
     }
 
-    public static void analyse(String profFilePath) {
+    public void start() {
+        //reset position
+        this.position = 0;
+        this.start = true;
+        this.cleanStackTree();
 
         //print tree node.
-        PrintTree printTree = new PrintTree();
+        printTree = this.new PrintTree();
         printTree.startPrinter();
+    }
+
+    public void stop() {
+        this.start = false;
+        this.blockingQueue.clear();
+        //cancel timer
+        printTree.cancel();
+    }
+
+    public void print(boolean print) {
+        this.printTree.print(print);
+    }
+
+    public void analyse(String profFilePath) {
+        this.start();
 
         while (start) {
             RandomAccessFile randomAccessFile = null;
@@ -78,23 +105,25 @@ public class ProfilerCollector {
         }
     }
 
-    private static void buildStackFrame(RandomAccessFile randomAccessFile) throws IOException {
+    private void buildStackFrame(RandomAccessFile randomAccessFile) throws IOException {
         //Started [cpu] profiling
         randomAccessFile.readLine();
         String str = null;
-        while ((str = randomAccessFile.readLine()) != null && str.startsWith("sample:")) {
-            String sample = str.substring(7).trim();
-            //build the stack
-            Stack stack = new Stack();
-            stack.setSample(Integer.parseInt(sample));
-            blockingQueue.add(stack);
+        while ((str = randomAccessFile.readLine()) != null) {
+            if (str.startsWith("sample:")) {
+                String sample = str.substring(7).trim();
+                //build the stack
+                Stack stack = new Stack();
+                stack.setSample(Integer.parseInt(sample));
+                blockingQueue.add(stack);
 
-            //build the stackFrame
-            StackFrame stackFrame = new StackFrame();
-            stackFrame.setSample(Integer.parseInt(sample));
-            stack.setTop(stackFrame);
+                //build the stackFrame
+                StackFrame stackFrame = new StackFrame();
+                stackFrame.setSample(Integer.parseInt(sample));
+                stack.setTop(stackFrame);
 
-            buildStack(stackFrame, randomAccessFile);
+                buildStack(stackFrame, randomAccessFile);
+            }
         }
     }
 
@@ -113,34 +142,35 @@ public class ProfilerCollector {
         }
     }
 
-    public static class PrintTree {
+    public class PrintTree {
 
-        private static Timer timer;
+        private Timer timer;
 
-        private static volatile boolean printing = true;
+        private volatile boolean printing = true;
 
-        private final static Logger logger = Logger.getInstance(PrintTree.class);
-
-        public static void startPrinter() {
+        public void startPrinter() {
             timer = new Timer("PRINT-timer", true);
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
                     //remove prev stack
-                    ProfilerCallTreeWindow.getRoot().removeAllChildren();
+                    cleanStackTree();
 
-                    PrintTree.buildTree();
+                    PrintTree.this.buildTree();
 
-                    if (printing) ProfilerCallTreeWindow.reload();
+                    if (printing && profilerCallTreeWindow != null) {
+                        profilerCallTreeWindow.reload();
+                    }
                 }
             }, 10000, 5000);
         }
 
-        public static void buildTree() {
+        public void buildTree() {
             if (blockingQueue.isEmpty()) return;
             List<Stack> stacks = new ArrayList<>();
             blockingQueue.drainTo(stacks);
             if (!printing) return;
+            if (profilerCallTreeWindow == null) return;
             MultiMap<String, StackFrame> multiMap = new MultiMap();
             for (Stack stack : stacks) {
                 multiMap.add(stack.getTop().getName(), stack.getTop());
@@ -164,11 +194,11 @@ public class ProfilerCollector {
             //calculate stack percent
             calculatePercent(stackFrames);
             for (StackFrame stackFrame : stackFrames) {
-                PrintTree.buildTreeNode(stackFrame, ProfilerCallTreeWindow.getRoot());
+                this.buildTreeNode(stackFrame, profilerCallTreeWindow.getRoot());
             }
         }
 
-        private static void buildTreeNode(StackFrame stackFrame, DefaultMutableTreeNode parent) {
+        private void buildTreeNode(StackFrame stackFrame, DefaultMutableTreeNode parent) {
             if (stackFrame != null) {
                 DecimalFormat decimalFormat = new DecimalFormat("##0.00");
                 String percent = decimalFormat.format(stackFrame.getPercent() * 100);
@@ -184,7 +214,7 @@ public class ProfilerCollector {
             }
         }
 
-        private static void calculatePercent(List<StackFrame> stackFrames) {
+        private void calculatePercent(List<StackFrame> stackFrames) {
             if (stackFrames == null) return;
             Collections.sort(stackFrames, new Comparator<StackFrame>() {
                 public int compare(StackFrame stackFrame, StackFrame stackFrame1) {
@@ -207,8 +237,12 @@ public class ProfilerCollector {
             }
         }
 
-        public static void print(boolean print) {
+        public void print(boolean print) {
             printing = print;
+        }
+
+        public void cancel() {
+            timer.cancel();
         }
     }
 }

@@ -1,17 +1,11 @@
 package fun.codec.eprofiler.runner.calltree.model;
 
 import com.intellij.icons.AllIcons;
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.ToolWindow;
-import com.intellij.openapi.wm.ToolWindowFactory;
 import com.intellij.openapi.wm.impl.ToolWindowImpl;
-import com.intellij.ui.content.Content;
-import com.intellij.ui.content.ContentFactory;
-import com.intellij.ui.content.ContentManager;
 import fun.codec.eprofiler.runner.ProfilerCollector;
-import org.jetbrains.annotations.NotNull;
+import fun.codec.eprofiler.runner.calltree.action.RefreshAction;
 
 import javax.swing.*;
 import javax.swing.event.*;
@@ -23,34 +17,20 @@ import javax.swing.tree.DefaultTreeModel;
  * @author: echo
  * @create: 2018-12-12 10:51
  */
-public class ProfilerCallTreeWindow implements ToolWindowFactory {
+public class ProfilerCallTreeWindow {
 
-    public ProfilerCallTreeWindow() {
-    }
-
+    private JTree jtree;
     private JPanel jpanel;
     private JScrollPane jscrollPane;
-    private JTree jtree;
 
-    private static DefaultMutableTreeNode root;
+    private Project project;
+    private DefaultTreeModel treeModel;
+    private DefaultMutableTreeNode root;
 
-    private static DefaultTreeModel treeModel;
-
-    public void init(ToolWindow window) {
-        AnAction refresh = new AnAction("Refresh", "Refresh EProfiler", AllIcons.Actions.Refresh) {
-            public void actionPerformed(@NotNull AnActionEvent e) {
-                ProfilerCollector.PrintTree.print(true);
-            }
-        };
-        ((ToolWindowImpl) window).setTabActions(refresh);
-    }
-
-    @Override
-    public void createToolWindowContent(@NotNull Project project, @NotNull ToolWindow toolWindow) {
-        ContentManager cm = toolWindow.getContentManager();
-        ContentFactory factory = cm.getFactory();
-        Content content = factory.createContent(jpanel, "", false);
-        cm.addContent(content);
+    public ProfilerCallTreeWindow(ToolWindow toolWindow, Project project) {
+        this.project = project;
+        RefreshAction refresh = new RefreshAction("Refresh", "Refresh EProfiler", AllIcons.Actions.Refresh);
+        ((ToolWindowImpl) toolWindow).setTabActions(refresh);
     }
 
     private void createUIComponents() {
@@ -67,21 +47,24 @@ public class ProfilerCallTreeWindow implements ToolWindowFactory {
             @Override
             public void treeExpanded(TreeExpansionEvent event) {
                 //stop print stack tree.
-                ProfilerCollector.PrintTree.print(false);
+                project.getComponent(ProfilerCollector.class).print(false);
             }
 
             @Override
             public void treeCollapsed(TreeExpansionEvent event) {
-
             }
         });
     }
 
-    public static DefaultMutableTreeNode getRoot() {
+    public DefaultMutableTreeNode getRoot() {
         return root;
     }
 
-    public static void reload() {
+    public void reload() {
         treeModel.reload();
+    }
+
+    public JPanel getContent() {
+        return jpanel;
     }
 }
