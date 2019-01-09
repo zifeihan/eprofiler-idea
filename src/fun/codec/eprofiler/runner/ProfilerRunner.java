@@ -4,18 +4,18 @@ import com.intellij.execution.ExecutionException;
 import com.intellij.execution.application.ApplicationConfiguration;
 import com.intellij.execution.configurations.*;
 import com.intellij.execution.impl.DefaultJavaProgramRunner;
-import com.intellij.execution.process.CapturingProcessAdapter;
-import com.intellij.execution.process.ProcessEvent;
-import com.intellij.execution.process.ProcessHandler;
+import com.intellij.execution.process.*;
 import com.intellij.execution.runners.ExecutionEnvironment;
 import com.intellij.execution.runners.RunConfigurationWithSuppressedDefaultRunAction;
 import com.intellij.execution.ui.RunContentDescriptor;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.SystemInfo;
+import com.sun.tools.attach.VirtualMachine;
+import fun.codec.process.Jps;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -26,11 +26,9 @@ import java.util.Map;
  */
 public class ProfilerRunner extends DefaultJavaProgramRunner {
 
-    private Map<String, File> perfFileMap = new HashMap<>();
-
-    private String dylibPath;
-
     private Logger logger = Logger.getInstance(ProfilerRunner.class);
+
+    private String profilerPath = System.getProperty("java.io.tmpdir") + "libasyncProfiler.so";
 
     @Override
     public boolean canRun(@NotNull String executorId, @NotNull RunProfile profile) {
@@ -38,7 +36,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
         try {
             bool = (executorId == ProfilerExecutor.Companion.getEXECUTOR_ID())
                     && (!(profile instanceof RunConfigurationWithSuppressedDefaultRunAction))
-                    && ((profile instanceof RunConfigurationBase));
+                    && ((profile instanceof RunConfigurationBase) && SystemInfo.isUnix);
         } catch (Exception ex) {
             bool = false;
         }
@@ -46,40 +44,26 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
     }
 
     @Override
-    public void patch(JavaParameters javaParameters, RunnerSettings settings, RunProfile runProfile, boolean beforeExecution) throws ExecutionException {
-        super.patch(javaParameters, settings, runProfile, beforeExecution);
-        if (runProfile instanceof ApplicationConfiguration) {
-            ApplicationConfiguration configuration = (ApplicationConfiguration) runProfile;
-            Project project = configuration.getProject();
-            File tmpFile = copyProfilerAgent();
-            perfFileMap.put(project.getProjectFilePath(), tmpFile);
-            if (beforeExecution) {
-                ParametersList vmParametersList = javaParameters.getVMParametersList();
-                StringBuilder sb = new StringBuilder()
-                        .append("-agentpath:")
-                        .append(dylibPath)
-                        .append("=start,")
-                        .append("file=")
-                        .append(tmpFile.getAbsolutePath());
-                vmParametersList.add(sb.toString());
-            }
-        }
-    }
-
-
-    @Override
     protected RunContentDescriptor doExecute(@NotNull RunProfileState state, @NotNull ExecutionEnvironment env) throws ExecutionException {
         Project project = env.getProject();
         RunContentDescriptor descriptor = super.doExecute(state, env);
+        RunProfile runProfile = env.getRunProfile();
+        ApplicationConfiguration configuration = (ApplicationConfiguration) runProfile;
+        String mainClass = configuration.getMainClassName();
         if (descriptor != null) {
             ProcessHandler processHandler = descriptor.getProcessHandler();
+            File tmpFile = this.copyProfilerAgent();
+            Map<String, String> map = Jps.getPID(new String[]{"-l"});
+            String PID = map.get(mainClass);
             processHandler.addProcessListener(new CapturingProcessAdapter() {
                 @Override
                 public void startNotified(@NotNull ProcessEvent event) {
-                    File tmpFile = perfFileMap.get(project.getProjectFilePath());
                     Thread thread = new Thread(new Runnable() {
                         @Override
                         public void run() {
+
+                            ProfilerRunner.this.profiler(PID, tmpFile.getAbsolutePath());
+
                             project.getComponent(ProfilerCollector.class).analyse(tmpFile.getAbsolutePath());
                         }
                     }, "ProfilerCollector-Thread");
@@ -92,8 +76,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
                     logger.info("close profiler...");
                     try {
                         project.getComponent(ProfilerCollector.class).stop();
-                        File tmpPerf = perfFileMap.get(project.getProjectFilePath());
-                        tmpPerf.delete();
+                        tmpFile.delete();
                     } catch (Exception e) {
                         logger.error("[close profiler error,error msg:]", e);
                     }
@@ -103,19 +86,24 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
         return descriptor;
     }
 
+    private void profiler(String pid, String tmpFilePath) {
+        try {
+            VirtualMachine vm = VirtualMachine.attach(pid);
+            vm.loadAgentPath(profilerPath, "start,file=" + tmpFilePath);
+            vm.detach();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * copy agent to user.home and gen tmp file
      */
     private File copyProfilerAgent() {
         ClassLoader classLoader = getClass().getClassLoader();
 
-        File dir = new File(System.getProperty("user.home") + File.separator + ".perf");
-        if (!dir.exists()) dir.mkdir();
-
-        File dylib = new File(dir.getAbsolutePath() + File.separator + "libasyncProfiler.so");
+        File dylib = new File(profilerPath);
         if (dylib.exists()) dylib.delete();
-
-        this.dylibPath = dylib.getAbsolutePath();
 
         File tmpFile = null;
         try {
