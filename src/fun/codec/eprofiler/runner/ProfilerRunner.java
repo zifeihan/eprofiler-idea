@@ -12,6 +12,7 @@ import com.intellij.execution.runners.RunConfigurationWithSuppressedDefaultRunAc
 import com.intellij.execution.ui.RunContentDescriptor;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.SystemInfo;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -38,7 +39,9 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
         try {
             bool = (executorId == ProfilerExecutor.Companion.getEXECUTOR_ID())
                     && (!(profile instanceof RunConfigurationWithSuppressedDefaultRunAction))
-                    && ((profile instanceof RunConfigurationBase));
+                    && (profile instanceof RunConfigurationBase)
+                    && (profile instanceof ApplicationConfiguration)
+                    && SystemInfo.isUnix;
         } catch (Exception ex) {
             bool = false;
         }
