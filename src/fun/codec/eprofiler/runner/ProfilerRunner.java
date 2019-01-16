@@ -1,7 +1,6 @@
 package fun.codec.eprofiler.runner;
 
 import com.intellij.execution.ExecutionException;
-import com.intellij.execution.application.ApplicationConfiguration;
 import com.intellij.execution.configurations.*;
 import com.intellij.execution.impl.DefaultJavaProgramRunner;
 import com.intellij.execution.process.CapturingProcessAdapter;
@@ -30,7 +29,7 @@ import java.util.Map;
  */
 public class ProfilerRunner extends DefaultJavaProgramRunner {
 
-    private Map<String, File> perfFileMap = new HashMap<>();
+    private Map<Project, File> perfFileMap = new HashMap<>();
 
     private Logger logger = Logger.getInstance(ProfilerRunner.class);
 
@@ -43,7 +42,6 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
             bool = (executorId == ProfilerExecutor.Companion.getEXECUTOR_ID())
                     && (!(profile instanceof RunConfigurationWithSuppressedDefaultRunAction))
                     && (profile instanceof RunConfigurationBase)
-                    && (profile instanceof ApplicationConfiguration)
                     && SystemInfo.isUnix;
         } catch (Exception ex) {
             bool = false;
@@ -55,9 +53,10 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
     public void patch(JavaParameters javaParameters, RunnerSettings settings, RunProfile runProfile, boolean beforeExecution) throws ExecutionException {
         super.patch(javaParameters, settings, runProfile, beforeExecution);
         if (beforeExecution) {
+            Project project = ((RunConfigurationBase) runProfile).getProject();
+            if (perfFileMap.get(project) != null) return;
             ParametersList vmParametersList = javaParameters.getVMParametersList();
             File tmpFile = this.copyProfilerAgent();
-//            perfFileMap.put(project.getProjectFilePath(), tmpFile);
             StringBuilder sb = new StringBuilder()
                     .append("-agentpath:")
                     .append(profilerPath)
@@ -65,6 +64,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
                     .append("file=")
                     .append(tmpFile.getAbsolutePath());
             vmParametersList.add(sb.toString());
+            perfFileMap.put(project, tmpFile);
         }
     }
 
@@ -80,7 +80,8 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
                     Thread thread = new Thread(new Runnable() {
                         @Override
                         public void run() {
-//                            project.getComponent(ProfilerCollector.class).analyse(tmpFile.getAbsolutePath());
+                            File tmpFile = perfFileMap.get(project);
+                            project.getComponent(ProfilerCollector.class).analyse(tmpFile.getAbsolutePath());
                         }
                     }, "ProfilerCollector-Thread");
                     thread.setDaemon(true);
@@ -92,7 +93,9 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
                     logger.info("close profiler...");
                     try {
                         project.getComponent(ProfilerCollector.class).stop();
-//                        tmpFile.delete();
+                        File tmpFile = perfFileMap.get(project);
+                        tmpFile.delete();
+                        perfFileMap.remove(project);
                     } catch (Exception e) {
                         logger.error("[close profiler error,error msg:]", e);
                     }
