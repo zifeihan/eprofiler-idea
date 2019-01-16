@@ -42,7 +42,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
             bool = (executorId == ProfilerExecutor.Companion.getEXECUTOR_ID())
                     && (!(profile instanceof RunConfigurationWithSuppressedDefaultRunAction))
                     && (profile instanceof RunConfigurationBase)
-                    && SystemInfo.isUnix;
+                    && SystemInfo.isMac;
         } catch (Exception ex) {
             bool = false;
         }
