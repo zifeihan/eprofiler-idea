@@ -39,6 +39,8 @@ public class ProfilerCollector implements ProjectComponent {
 
     private BlockingQueue<Stack> blockingQueue;
 
+    private String hotMethodPerfFile;
+
     public ProfilerCollector() {
         this.blockingQueue = new ArrayBlockingQueue<Stack>(100000);
     }
@@ -53,10 +55,11 @@ public class ProfilerCollector implements ProjectComponent {
         }
     }
 
-    public void start() {
+    public void start(String perfFile) {
         //reset position
         this.position = 0;
         this.start = true;
+        this.hotMethodPerfFile = perfFile;
         this.cleanStackTree();
 
         //print tree node.
@@ -65,41 +68,50 @@ public class ProfilerCollector implements ProjectComponent {
     }
 
     public void stop() {
+        this.position = 0;
         this.start = false;
         this.blockingQueue.clear();
+
+        //build all stack tree
+        this.parseHotMethodFile();
+
         //cancel timer
         printTree.cancel();
     }
 
     public void print(boolean print) {
+        if (!start) return;
         this.printTree.print(print);
     }
 
-    public void analyse(String profFilePath) {
-        this.start();
-
+    public void analyse(String perfFilePath) {
+        this.start(perfFilePath);
         while (start) {
-            RandomAccessFile randomAccessFile = null;
-            try {
-                File file = new File(profFilePath);
-                if (file.length() > position) {
-                    randomAccessFile = new RandomAccessFile(file, "r");
-                    randomAccessFile.seek(position);
+            this.parseHotMethodFile();
+        }
+    }
 
-                    buildStackFrame(randomAccessFile);
-                    position = randomAccessFile.getFilePointer();
-                } else {
-                    TimeUnit.SECONDS.sleep(1);
-                }
-            } catch (Exception e) {
-                logger.error("parse stack error,msg:", e);
-            } finally {
-                if (randomAccessFile != null) {
-                    try {
-                        randomAccessFile.close();
-                    } catch (IOException e) {
-                        logger.error("close file error,msg:", e);
-                    }
+    private void parseHotMethodFile() {
+        RandomAccessFile randomAccessFile = null;
+        try {
+            File file = new File(this.hotMethodPerfFile);
+            if (file.length() > position) {
+                randomAccessFile = new RandomAccessFile(file, "r");
+                randomAccessFile.seek(position);
+
+                buildStackFrame(randomAccessFile);
+                position = randomAccessFile.getFilePointer();
+            } else {
+                TimeUnit.SECONDS.sleep(1);
+            }
+        } catch (Exception e) {
+            logger.error("parse stack error,msg:", e);
+        } finally {
+            if (randomAccessFile != null) {
+                try {
+                    randomAccessFile.close();
+                } catch (IOException e) {
+                    logger.error("close file error,msg:", e);
                 }
             }
         }

@@ -22,7 +22,6 @@ public class ProfilerCallTreeWindow {
     private JTree jtree;
     private JPanel jpanel;
     private JScrollPane jscrollPane;
-
     private Project project;
     private DefaultTreeModel treeModel;
     private DefaultMutableTreeNode root;
