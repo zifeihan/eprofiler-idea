@@ -1,5 +1,4 @@
 package fun.codec.eprofiler.runner;
-
 import com.intellij.openapi.components.ProjectComponent;
 import com.intellij.openapi.diagnostic.Logger;
 import fun.codec.eprofiler.runner.calltree.CollectionUtil;
@@ -29,7 +28,11 @@ public class ProfilerCollector implements ProjectComponent {
 
     private volatile boolean start;
 
+    private String hotMethodPerfFile;
+
     private static volatile long position;
+
+    private BlockingQueue<Stack> blockingQueue;
 
     private ProfilerCollector.PrintTree printTree;
 
@@ -37,9 +40,6 @@ public class ProfilerCollector implements ProjectComponent {
 
     private Logger logger = Logger.getInstance(ProfilerExecutor.class);
 
-    private BlockingQueue<Stack> blockingQueue;
-
-    private String hotMethodPerfFile;
 
     public ProfilerCollector() {
         this.blockingQueue = new ArrayBlockingQueue<Stack>(100000);
@@ -90,7 +90,7 @@ public class ProfilerCollector implements ProjectComponent {
         profilerCallTreeWindow.reload();
 
         this.parseHotMethodFile();
-
+        this.cleanStackTree();
         printTree.buildTree();
         profilerCallTreeWindow.reload();
     }
@@ -196,36 +196,39 @@ public class ProfilerCollector implements ProjectComponent {
         }
 
         public void buildTree() {
-
-            if (blockingQueue.isEmpty()) return;
-            List<Stack> stacks = new ArrayList<>();
-            blockingQueue.drainTo(stacks);
-            if (!printing) return;
-            if (profilerCallTreeWindow == null) return;
-            MultiMap<String, StackFrame> multiMap = new MultiMap();
-            for (Stack stack : stacks) {
-                multiMap.add(stack.getTop().getName(), stack.getTop());
-            }
-
-            List<StackFrame> stackFrames = new ArrayList<>();
-            for (Map.Entry<String, List<StackFrame>> map : multiMap.entrySet()) {
-                List<StackFrame> stackFrameList = map.getValue();
-                StackFrame stackFrame = null;
-                //save top stackFrame
-                for (int i = 0; i < stackFrameList.size(); i++) {
-                    if (i == 0) {
-                        stackFrame = stackFrameList.get(0);
-                    } else {
-                        stackFrame = Merge.mergeStack(stackFrame, stackFrameList.get(i));
-                    }
+            try {
+                if (blockingQueue.isEmpty()) return;
+                List<Stack> stacks = new ArrayList<>();
+                blockingQueue.drainTo(stacks);
+                if (!printing) return;
+                if (profilerCallTreeWindow == null) return;
+                MultiMap<String, StackFrame> multiMap = new MultiMap();
+                for (Stack stack : stacks) {
+                    multiMap.add(stack.getTop().getName(), stack.getTop());
                 }
-                stackFrames.add(stackFrame);
-            }
 
-            //calculate stack percent
-            calculatePercent(stackFrames);
-            for (StackFrame stackFrame : stackFrames) {
-                this.buildTreeNode(stackFrame, profilerCallTreeWindow.getRoot());
+                List<StackFrame> stackFrames = new ArrayList<>();
+                for (Map.Entry<String, List<StackFrame>> map : multiMap.entrySet()) {
+                    List<StackFrame> stackFrameList = map.getValue();
+                    StackFrame stackFrame = null;
+                    //save top stackFrame
+                    for (int i = 0; i < stackFrameList.size(); i++) {
+                        if (i == 0) {
+                            stackFrame = stackFrameList.get(0);
+                        } else {
+                            stackFrame = Merge.mergeStack(stackFrame, stackFrameList.get(i));
+                        }
+                    }
+                    stackFrames.add(stackFrame);
+                }
+
+                //calculate stack percent
+                calculatePercent(stackFrames);
+                for (StackFrame stackFrame : stackFrames) {
+                    this.buildTreeNode(stackFrame, profilerCallTreeWindow.getRoot());
+                }
+            } catch (Exception e) {
+                logger.error("[PrintTree] occur exception msg:", e);
             }
         }
 
