@@ -118,7 +118,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
         try {
             tmpFile = File.createTempFile("profiler", ".dd");
 
-            InputStream inputStream = classLoader.getResource("dylib/libasyncProfiler.so").openStream();
+            InputStream inputStream = classLoader.getResource("dylib/mac/libasyncProfiler.so").openStream();
             FileOutputStream fos = new FileOutputStream(dylib);
             int data;
             while ((data = inputStream.read()) != -1) {
