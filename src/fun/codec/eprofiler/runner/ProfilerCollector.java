@@ -52,6 +52,7 @@ public class ProfilerCollector implements ProjectComponent {
     public void cleanStackTree() {
         if (profilerCallTreeWindow != null) {
             profilerCallTreeWindow.getRoot().removeAllChildren();
+            profilerCallTreeWindow.reload();
         }
     }
 
@@ -68,15 +69,30 @@ public class ProfilerCollector implements ProjectComponent {
     }
 
     public void stop() {
+        //reset the position
         this.position = 0;
         this.start = false;
         this.blockingQueue.clear();
 
-        //build all stack tree
-        this.parseHotMethodFile();
-
         //cancel timer
         printTree.cancel();
+
+        //merge the total stack frame
+        this.mergeTotalHotMethod();
+    }
+
+    //merge the total stack frame
+    private void mergeTotalHotMethod() {
+        //build all stack tree
+        this.cleanStackTree();
+        DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode("merge the total hotmethod data...");
+        profilerCallTreeWindow.getRoot().add(treeNode);
+        profilerCallTreeWindow.reload();
+
+        this.parseHotMethodFile();
+
+        printTree.buildTree();
+        profilerCallTreeWindow.reload();
     }
 
     public void print(boolean print) {
@@ -165,19 +181,22 @@ public class ProfilerCollector implements ProjectComponent {
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
+
                     //remove prev stack
-                    cleanStackTree();
+                    ProfilerCollector.this.cleanStackTree();
 
                     PrintTree.this.buildTree();
 
                     if (printing && profilerCallTreeWindow != null) {
                         profilerCallTreeWindow.reload();
                     }
+
                 }
             }, 10000, 5000);
         }
 
         public void buildTree() {
+
             if (blockingQueue.isEmpty()) return;
             List<Stack> stacks = new ArrayList<>();
             blockingQueue.drainTo(stacks);
