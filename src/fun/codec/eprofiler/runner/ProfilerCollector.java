@@ -85,12 +85,13 @@ public class ProfilerCollector implements ProjectComponent {
     private void mergeTotalHotMethod() {
         //build all stack tree
         this.cleanStackTree();
-        DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode("merge the total hotmethod data...");
+        DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode("merge the total hotmethod data ...");
         profilerCallTreeWindow.getRoot().add(treeNode);
         profilerCallTreeWindow.reload();
 
         this.parseHotMethodFile();
         this.cleanStackTree();
+        printTree.print(true);
         printTree.buildTree();
         profilerCallTreeWindow.reload();
     }
@@ -183,7 +184,9 @@ public class ProfilerCollector implements ProjectComponent {
                 public void run() {
 
                     //remove prev stack
-                    ProfilerCollector.this.cleanStackTree();
+                    if (printing) {
+                        ProfilerCollector.this.cleanStackTree();
+                    }
 
                     PrintTree.this.buildTree();
 

@@ -33,7 +33,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
 
     private Logger logger = Logger.getInstance(ProfilerRunner.class);
 
-    private String profilerPath = System.getProperty("java.io.tmpdir") + "libasyncProfiler.so";
+    private String profilerPath = System.getProperty("java.io.tmpdir") + File.separator + "libasyncProfiler.so";
 
     @Override
     public boolean canRun(@NotNull String executorId, @NotNull RunProfile profile) {
@@ -42,7 +42,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
             bool = (executorId == ProfilerExecutor.Companion.getEXECUTOR_ID())
                     && (!(profile instanceof RunConfigurationWithSuppressedDefaultRunAction))
                     && (profile instanceof RunConfigurationBase)
-                    && SystemInfo.isMac;
+                    && (SystemInfo.isMac || SystemInfo.isLinux);
         } catch (Exception ex) {
             bool = false;
         }
@@ -117,8 +117,8 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
         File tmpFile = null;
         try {
             tmpFile = File.createTempFile("profiler", ".dd");
-
-            InputStream inputStream = classLoader.getResource("dylib/mac/libasyncProfiler.so").openStream();
+            String name = String.format("dylib/%s/libasyncProfiler.so", SystemInfo.isMac ? "mac" : "linux");
+            InputStream inputStream = classLoader.getResource(name).openStream();
             FileOutputStream fos = new FileOutputStream(dylib);
             int data;
             while ((data = inputStream.read()) != -1) {
