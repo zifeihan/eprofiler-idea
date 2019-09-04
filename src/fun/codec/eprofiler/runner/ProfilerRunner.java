@@ -117,7 +117,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
         File tmpFile = null;
         try {
             tmpFile = File.createTempFile("profiler", ".dd");
-            String name = String.format("dylib/%s/libasyncProfiler.so", SystemInfo.isMac ? "mac" : "linux");
+            String name = String.format("dylib/%s/libcpuprofiler.so", SystemInfo.isMac ? "mac" : "linux");
             InputStream inputStream = classLoader.getResource(name).openStream();
             FileOutputStream fos = new FileOutputStream(dylib);
             int data;
