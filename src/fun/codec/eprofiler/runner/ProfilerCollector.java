@@ -84,6 +84,9 @@ public class ProfilerCollector implements ProjectComponent {
     //merge the total stack frame
     private void mergeTotalHotMethod() {
         //build all stack tree
+        if (null == profilerCallTreeWindow) {
+            return;
+        }
         this.cleanStackTree();
         DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode("merge the total hotmethod data ...");
         profilerCallTreeWindow.getRoot().add(treeNode);

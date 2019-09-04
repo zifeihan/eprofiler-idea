@@ -33,7 +33,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
 
     private Logger logger = Logger.getInstance(ProfilerRunner.class);
 
-    private String profilerPath = System.getProperty("java.io.tmpdir") + File.separator + "libasyncProfiler.so";
+    private String profilerPath = System.getProperty("java.io.tmpdir") + File.separator + "libcpuprofiler.so";
 
     @Override
     public boolean canRun(@NotNull String executorId, @NotNull RunProfile profile) {
