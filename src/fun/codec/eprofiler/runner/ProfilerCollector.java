@@ -1,4 +1,5 @@
 package fun.codec.eprofiler.runner;
+
 import com.intellij.openapi.components.ProjectComponent;
 import com.intellij.openapi.diagnostic.Logger;
 import fun.codec.eprofiler.runner.calltree.CollectionUtil;
@@ -230,7 +231,11 @@ public class ProfilerCollector implements ProjectComponent {
 
                 //calculate stack percent
                 calculatePercent(stackFrames);
-                for (StackFrame stackFrame : stackFrames) {
+                for (int i = 0; i < stackFrames.size(); i++) {
+                    if (i > 100) {
+                        break;
+                    }
+                    StackFrame stackFrame = stackFrames.get(i);
                     this.buildTreeNode(stackFrame, profilerCallTreeWindow.getRoot());
                 }
             } catch (Exception e) {

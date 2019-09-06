@@ -29,7 +29,7 @@ public class ProfilerExecutor extends Executor {
     @NotNull
     @Override
     public Icon getIcon() {
-        Icon icon = IconLoader.getIcon("/icons/run.png", getClass());
+        Icon icon = IconLoader.getIcon("/icons/start.png", getClass());
         return icon;
     }
 
