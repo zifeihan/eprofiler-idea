@@ -1,4 +1,3 @@
-/*.iml
 /*.ipr
 /*.iws
 /.classpath
@@ -10,7 +9,6 @@
 /release.properties
 /*/target
 /out
-*.iml
 
 # These are needed if running in IDE without properties set
 /ibderby
