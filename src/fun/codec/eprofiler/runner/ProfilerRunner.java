@@ -18,6 +18,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,6 +36,8 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
     private Logger logger = Logger.getInstance(ProfilerRunner.class);
 
     private String profilerPath = System.getProperty("java.io.tmpdir") + File.separator + "libcpuprofiler.so";
+
+    public static String flamegraph = System.getProperty("java.io.tmpdir") + File.separator + "flamegraph.pl";
 
     @Override
     public boolean canRun(@NotNull String executorId, @NotNull RunProfile profile) {
@@ -57,6 +61,7 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
             if (perfFileMap.get(project) != null) return;
             ParametersList vmParametersList = javaParameters.getVMParametersList();
             File tmpFile = this.copyProfilerAgent();
+            copyFlameGraph();
             StringBuilder sb = new StringBuilder()
                     .append("-agentpath:")
                     .append(profilerPath)
@@ -132,5 +137,18 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
         return tmpFile;
     }
 
+
+    private void copyFlameGraph() {
+
+        String flameGraph = getClass().getClassLoader().getResource("FlameGraph/flamegraph.pl").getPath();
+        try {
+            Files.deleteIfExists(Paths.get(flamegraph));
+
+            Files.copy(Paths.get(flameGraph), Paths.get(flamegraph));
+        } catch (IOException e) {
+            logger.error("create flameGraph tmp file error", e);
+        }
+
+    }
 
 }
