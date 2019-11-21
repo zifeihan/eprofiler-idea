@@ -8,12 +8,18 @@ import fun.codec.eprofiler.runner.calltree.model.MultiMap;
 import fun.codec.eprofiler.runner.calltree.model.ProfilerCallTreeWindow;
 import fun.codec.eprofiler.runner.calltree.model.Stack;
 import fun.codec.eprofiler.runner.calltree.model.StackFrame;
+import fun.codec.eprofiler.runner.netty.HttpStaticFileServer;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.swing.tree.DefaultMutableTreeNode;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -39,7 +45,25 @@ public class ProfilerCollector implements ProjectComponent {
 
     private ProfilerCallTreeWindow profilerCallTreeWindow;
 
-    private Logger logger = Logger.getInstance(ProfilerExecutor.class);
+    private static final Logger logger = Logger.getInstance(ProfilerExecutor.class);
+
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
+
+    public static final String HOME_URL = System.getProperty("user.home") + File.separator + "eprofiler" + File.separator + "flameGraph";
+
+    static {
+        try {
+            Path path = Paths.get(HOME_URL);
+            if (!Files.exists(path)) {
+                Files.createDirectories(path);
+            }
+
+            new Thread(() -> HttpStaticFileServer.main(null), "netty-start-thread").start();
+        } catch (IOException e) {
+            logger.error("create HOME_URL error. ", e);
+        }
+
+    }
 
 
     public ProfilerCollector() {
@@ -80,6 +104,87 @@ public class ProfilerCollector implements ProjectComponent {
 
         //merge the total stack frame
         this.mergeTotalHotMethod();
+
+        try {
+            // svg path
+            String fileName = HOME_URL + File.separator + formatter.format(LocalDateTime.now()) + ".svg";
+
+            createFlameGraph(fileName);
+        } catch (Exception e) {
+            logger.error("create flameGraph error :", e);
+        }
+
+    }
+
+    private void createFlameGraph(String svgSavePath) throws IOException {
+
+        Path path = Paths.get(hotMethodPerfFile);
+
+        Path tempFile = Files.createTempFile("eprofiler", ".txt");
+
+        Path svgPath = Paths.get(svgSavePath);
+
+        List<String> list = Files.readAllLines(path);
+
+        StringBuilder sb = new StringBuilder();
+
+        final int[] temp = {0};
+        List<String> stackFrame = new ArrayList<>();
+        list.forEach(e -> {
+            boolean start = e.startsWith("sample:");
+            // resolve new line
+            if (start) {
+                temp[0] = Integer.valueOf(e.split(":")[1].trim());
+            } else if (StringUtils.isNotBlank(e)) {
+                stackFrame.add(e.split("]")[1].trim());
+            } else {
+                // end a stack
+                for (int i = stackFrame.size() - 1; i >= 0; i--) {
+                    sb.append(stackFrame.get(i));
+                    if (i != 0) sb.append(";");
+                }
+                sb.append(" ").append(temp[0]).append("\n");
+                stackFrame.clear();
+            }
+        });
+
+        Files.write(tempFile, sb.toString().getBytes(StandardCharsets.UTF_8));
+
+        String flameGraph = ProfilerRunner.flamegraph;
+        // create flameGraph
+        String[] cmd = new String[]{flameGraph, "--colors=java", tempFile.toString()};
+
+        List<String> lists = runNative(cmd);
+
+        try (BufferedWriter bw = Files.newBufferedWriter(svgPath)) {
+            for (String e : lists) {
+                bw.append(e).append("\n");
+            }
+            bw.flush();
+        }
+
+    }
+
+    public static List<String> runNative(String[] cmdToRunWithArgs) throws IOException {
+        Process p;
+        try {
+            p = Runtime.getRuntime().exec(cmdToRunWithArgs);
+        } catch (Throwable e) {
+            e.printStackTrace();
+            throw e;
+        }
+
+        ArrayList<String> sa = new ArrayList<String>();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sa.add(line);
+            }
+            p.waitFor();
+        } catch (IOException | InterruptedException e) {
+            logger.error("runNative error.", e);
+        }
+        return sa;
     }
 
     //merge the total stack frame
