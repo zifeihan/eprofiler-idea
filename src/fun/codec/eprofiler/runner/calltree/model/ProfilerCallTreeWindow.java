@@ -66,15 +66,30 @@ public class ProfilerCallTreeWindow {
             public void treeCollapsed(TreeExpansionEvent event) {
             }
         });
+        /**
+         * 鼠标右键跳转至代码
+         */
         jtree.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON3) {
                     DefaultMutableTreeNode note = (DefaultMutableTreeNode) jtree.getLastSelectedPathComponent();
                     String name = note.toString();
-                    String allName = name.substring(0, name.lastIndexOf("("));
-                    String className = allName.substring(0, allName.lastIndexOf("."));
-                    String methodName = allName.substring(allName.lastIndexOf(".") + 1).trim();
+                    int i = name.lastIndexOf("(");
+                    if (i < 0) {
+                        return;
+                    }
+                    String allName = name.substring(0, i);
+                    int methodIndex = allName.lastIndexOf(".");
+                    if (methodIndex < 0) {
+                        return;
+                    }
+                    String className = allName.substring(0, methodIndex);
+                    int i1 = allName.lastIndexOf(".");
+                    if (i1 < 0) {
+                        return;
+                    }
+                    String methodName = allName.substring(i1 + 1).trim();
                     PsiClass psiClass = ClassUtil.findPsiClass(PsiManager.getInstance(project), className);
                     if (psiClass != null) {
                         PsiMethod[] allMethods = psiClass.getAllMethods();
