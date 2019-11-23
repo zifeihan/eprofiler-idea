@@ -136,7 +136,7 @@ public class ProfilerCollector implements ProjectComponent {
             if (start) {
                 temp[0] = Integer.valueOf(e.split(":")[1].trim());
             } else if (StringUtils.isNotBlank(e)) {
-                stackFrame.add(e.split("]")[1].trim());
+                stackFrame.add(e.trim());
             } else {
                 // end a stack
                 for (int i = stackFrame.size() - 1; i >= 0; i--) {
