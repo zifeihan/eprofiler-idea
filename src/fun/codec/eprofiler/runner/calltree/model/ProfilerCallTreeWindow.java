@@ -22,6 +22,8 @@ import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
  * @author: echo
@@ -64,23 +66,25 @@ public class ProfilerCallTreeWindow {
             public void treeCollapsed(TreeExpansionEvent event) {
             }
         });
-        jtree.addTreeSelectionListener(new TreeSelectionListener() {
+        jtree.addMouseListener(new MouseAdapter() {
             @Override
-            public void valueChanged(TreeSelectionEvent e) {
-                DefaultMutableTreeNode note = (DefaultMutableTreeNode) jtree.getLastSelectedPathComponent();
-                String name = note.toString();
-                String allName = name.substring(0, name.lastIndexOf("("));
-                String className = allName.substring(0, allName.lastIndexOf("."));
-                String methodName = allName.substring(allName.lastIndexOf(".") + 1).trim();
-                PsiClass psiClass = ClassUtil.findPsiClass(PsiManager.getInstance(project), className);
-                if (psiClass != null) {
-                    PsiMethod[] allMethods = psiClass.getAllMethods();
-                    if (allMethods != null) {
-                        for (PsiMethod method : allMethods) {
-                            if (method.getName().equals(methodName)) {
-                                Navigatable navigatable = (Navigatable) method.getNavigationElement();
-                                navigatable.navigate(true);
-                                return;
+            public void mousePressed(MouseEvent e) {
+                if (e.getButton() == MouseEvent.BUTTON3) {
+                    DefaultMutableTreeNode note = (DefaultMutableTreeNode) jtree.getLastSelectedPathComponent();
+                    String name = note.toString();
+                    String allName = name.substring(0, name.lastIndexOf("("));
+                    String className = allName.substring(0, allName.lastIndexOf("."));
+                    String methodName = allName.substring(allName.lastIndexOf(".") + 1).trim();
+                    PsiClass psiClass = ClassUtil.findPsiClass(PsiManager.getInstance(project), className);
+                    if (psiClass != null) {
+                        PsiMethod[] allMethods = psiClass.getAllMethods();
+                        if (allMethods != null) {
+                            for (PsiMethod method : allMethods) {
+                                if (method.getName().equals(methodName)) {
+                                    Navigatable navigatable = (Navigatable) method.getNavigationElement();
+                                    navigatable.navigate(true);
+                                    return;
+                                }
                             }
                         }
                     }
