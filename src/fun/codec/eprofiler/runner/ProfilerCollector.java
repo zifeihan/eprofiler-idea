@@ -67,21 +67,21 @@ public class ProfilerCollector implements ProjectComponent {
 
 
     public ProfilerCollector() {
-        this.blockingQueue = new ArrayBlockingQueue<Stack>(100000);
+        this.blockingQueue = new ArrayBlockingQueue<>(100000);
     }
 
     public void setProfilerCallTreeWindow(ProfilerCallTreeWindow treeWindow) {
         this.profilerCallTreeWindow = treeWindow;
     }
 
-    public void cleanStackTree() {
+    private void cleanStackTree() {
         if (profilerCallTreeWindow != null) {
             profilerCallTreeWindow.getRoot().removeAllChildren();
             profilerCallTreeWindow.reload();
         }
     }
 
-    public void start(String perfFile) {
+    private void start(String perfFile) {
         //reset position
         this.position = 0;
         this.start = true;
@@ -93,7 +93,7 @@ public class ProfilerCollector implements ProjectComponent {
         printTree.startPrinter();
     }
 
-    public void stop() {
+    void stop() {
         //reset the position
         this.position = 0;
         this.start = false;
@@ -104,16 +104,6 @@ public class ProfilerCollector implements ProjectComponent {
 
         //merge the total stack frame
         this.mergeTotalHotMethod();
-
-        try {
-            // svg path
-            String fileName = HOME_URL + File.separator + formatter.format(LocalDateTime.now()) + ".svg";
-
-            createFlameGraph(fileName);
-        } catch (Exception e) {
-            logger.error("create flameGraph error :", e);
-        }
-
     }
 
     private void createFlameGraph(String svgSavePath) throws IOException {
@@ -165,7 +155,7 @@ public class ProfilerCollector implements ProjectComponent {
 
     }
 
-    public static List<String> runNative(String[] cmdToRunWithArgs) throws IOException {
+    private static List<String> runNative(String[] cmdToRunWithArgs) throws IOException {
         Process p;
         try {
             p = Runtime.getRuntime().exec(cmdToRunWithArgs);
@@ -174,7 +164,7 @@ public class ProfilerCollector implements ProjectComponent {
             throw e;
         }
 
-        ArrayList<String> sa = new ArrayList<String>();
+        ArrayList<String> sa = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -210,8 +200,18 @@ public class ProfilerCollector implements ProjectComponent {
         this.printTree.print(print);
     }
 
+    /**
+     * 导出火焰图
+     */
     public void dumpFlameGraph() {
+        try {
+            // svg path
+            String fileName = HOME_URL + File.separator + formatter.format(LocalDateTime.now()) + ".svg";
 
+            createFlameGraph(fileName);
+        } catch (Exception e) {
+            logger.error("create flameGraph error :", e);
+        }
     }
 
     public void analyse(String perfFilePath) {
@@ -250,7 +250,7 @@ public class ProfilerCollector implements ProjectComponent {
     private void buildStackFrame(RandomAccessFile randomAccessFile) throws IOException {
         //Started [cpu] profiling
         randomAccessFile.readLine();
-        String str = null;
+        String str;
         while ((str = randomAccessFile.readLine()) != null) {
             if (str.startsWith("sample:")) {
                 String sample = str.substring(7).trim();
@@ -290,7 +290,7 @@ public class ProfilerCollector implements ProjectComponent {
 
         private volatile boolean printing = true;
 
-        public void startPrinter() {
+        void startPrinter() {
             timer = new Timer("PRINT-timer", true);
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
@@ -311,7 +311,7 @@ public class ProfilerCollector implements ProjectComponent {
             }, 10000, 5000);
         }
 
-        public void buildTree() {
+        void buildTree() {
             try {
                 if (blockingQueue.isEmpty()) return;
                 List<Stack> stacks = new ArrayList<>();
@@ -360,8 +360,7 @@ public class ProfilerCollector implements ProjectComponent {
                 DefaultMutableTreeNode treeNode = new DefaultMutableTreeNode(stackFrame.getName() + format);
                 parent.add(treeNode);
                 List<StackFrame> childList = stackFrame.getChildList();
-                for (int i = 0; i < childList.size(); i++) {
-                    StackFrame frame = childList.get(i);
+                for (StackFrame frame : childList) {
                     if (CollectionUtil.isEmpty(frame.getChildList())) return;
                     buildTreeNode(frame, treeNode);
                 }
@@ -370,20 +369,13 @@ public class ProfilerCollector implements ProjectComponent {
 
         private void calculatePercent(List<StackFrame> stackFrames) {
             if (stackFrames == null) return;
-            Collections.sort(stackFrames, new Comparator<StackFrame>() {
+            stackFrames.sort(new Comparator<StackFrame>() {
                 public int compare(StackFrame stackFrame, StackFrame stackFrame1) {
-                    if (stackFrame.getSample() > stackFrame1.getSample()) {
-                        return -1;
-                    }
-                    if (stackFrame.getSample() == stackFrame1.getSample()) {
-                        return 0;
-                    }
-                    return 1;
+                    return Integer.compare(stackFrame1.getSample(), stackFrame.getSample());
                 }
             });
             float samples = (float) stackFrames.stream().mapToInt(StackFrame::getSample).sum();
-            for (int i = 0; i < stackFrames.size(); i++) {
-                StackFrame stackFrame = stackFrames.get(i);
+            for (StackFrame stackFrame : stackFrames) {
                 float percent = stackFrame.getSample() / samples;
                 stackFrame.setPercent(percent);
                 List<StackFrame> stackFrameList = stackFrame.getChildList();
@@ -391,11 +383,11 @@ public class ProfilerCollector implements ProjectComponent {
             }
         }
 
-        public void print(boolean print) {
+        void print(boolean print) {
             printing = print;
         }
 
-        public void cancel() {
+        void cancel() {
             timer.cancel();
         }
     }

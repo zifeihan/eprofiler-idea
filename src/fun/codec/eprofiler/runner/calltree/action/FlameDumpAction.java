@@ -24,6 +24,6 @@ public class FlameDumpAction extends AnAction {
     @Override
     public void actionPerformed(@NotNull AnActionEvent anActionEvent) {
         Project project = anActionEvent.getProject();
-        project.getComponent(ProfilerCollector.class).print(true);
+        project.getComponent(ProfilerCollector.class).dumpFlameGraph();
     }
 }
