@@ -44,6 +44,12 @@ public class ProfilerCallTreeWindow {
         RefreshAction refresh = new RefreshAction("Refresh", "Refresh EProfiler", AllIcons.Actions.Refresh);
         FlameDumpAction flameDumpAction = new FlameDumpAction("Dump Flame Graph", "Dump Flame Graph", AllIcons.Actions.Dump);
         ((ToolWindowImpl) toolWindow).setTabActions(refresh, flameDumpAction);
+        ((ToolWindowImpl) toolWindow).setTitleActions(refresh, flameDumpAction);
+
+        /*
+            不显示滚动窗口的边框
+         */
+        this.jscrollPane.setBorder(null);
     }
 
     private void createUIComponents() {
@@ -76,6 +82,9 @@ public class ProfilerCallTreeWindow {
             public void mousePressed(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON3) {
                     DefaultMutableTreeNode note = (DefaultMutableTreeNode) jtree.getLastSelectedPathComponent();
+                    if (null == note) {
+                        return;
+                    }
                     String name = note.toString();
                     int i = name.lastIndexOf("(");
                     if (i < 0) {
