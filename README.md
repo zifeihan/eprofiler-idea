@@ -12,15 +12,15 @@
 
 ##### 功能增强：
 
-###### 	1.打算在性能分析堆栈树加入代码跳转，点击相关的热点方法即可进入项目中的代码（已完成）
+###### 	1.打算在性能分析堆栈树加入代码跳转，点击相关的热点方法即可进入项目中的代码（已完成,11.23）
 
 ###### 	2.目前是实时分析的，后期会加入项目运行结束查看项目启动过程中的所有分析结果的聚合态
 
-###### 	3.支持导出分析结果为火焰图（已完成）
+###### 	3.支持导出分析结果为火焰图（已完成,11.19） 在使用idea插件过程中,打开链接: http://127.0.0.1:23333 即可跳转火焰图数据列表
+![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/20191123.png)
+![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/20191121161627.jpg)
 
 ###### 1.介绍![avatar](http://codec.fun/2019/01/07/eprofiler性能分析/image-20190107112242035.png)
-
-
 
 ###### 2.性能分析日志
 
