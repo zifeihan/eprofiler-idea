@@ -12,6 +12,7 @@ import com.intellij.psi.search.GlobalSearchScope;
 import com.intellij.psi.search.PsiShortNamesCache;
 import com.intellij.psi.util.ClassUtil;
 import fun.codec.eprofiler.runner.ProfilerCollector;
+import fun.codec.eprofiler.runner.calltree.action.FlameDumpAction;
 import fun.codec.eprofiler.runner.calltree.action.RefreshAction;
 
 import javax.swing.*;
@@ -41,7 +42,8 @@ public class ProfilerCallTreeWindow {
     public ProfilerCallTreeWindow(ToolWindow toolWindow, Project project) {
         this.project = project;
         RefreshAction refresh = new RefreshAction("Refresh", "Refresh EProfiler", AllIcons.Actions.Refresh);
-        ((ToolWindowImpl) toolWindow).setTabActions(refresh);
+        FlameDumpAction flameDumpAction = new FlameDumpAction("Dump Flame Graph", "Dump Flame Graph", AllIcons.Actions.Dump);
+        ((ToolWindowImpl) toolWindow).setTabActions(refresh, flameDumpAction);
     }
 
     private void createUIComponents() {

@@ -105,6 +105,10 @@ public class ProfilerCollector implements ProjectComponent {
         this.printTree.print(print);
     }
 
+    public void dumpFlameGraph() {
+
+    }
+
     public void analyse(String perfFilePath) {
         this.start(perfFilePath);
         while (start) {
