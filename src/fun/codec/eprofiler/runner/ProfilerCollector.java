@@ -94,6 +94,12 @@ public class ProfilerCollector implements ProjectComponent {
     }
 
     void stop() {
+
+        /**
+         * 在运行结束前再次导出火焰图
+         */
+        dumpFlameGraph();
+
         //reset the position
         this.position = 0;
         this.start = false;
