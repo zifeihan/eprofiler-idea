@@ -8,8 +8,6 @@ import com.intellij.pom.Navigatable;
 import com.intellij.psi.PsiClass;
 import com.intellij.psi.PsiManager;
 import com.intellij.psi.PsiMethod;
-import com.intellij.psi.search.GlobalSearchScope;
-import com.intellij.psi.search.PsiShortNamesCache;
 import com.intellij.psi.util.ClassUtil;
 import fun.codec.eprofiler.runner.ProfilerCollector;
 import fun.codec.eprofiler.runner.calltree.action.FlameDumpAction;
@@ -18,8 +16,6 @@ import fun.codec.eprofiler.runner.calltree.action.RefreshAction;
 import javax.swing.*;
 import javax.swing.event.TreeExpansionEvent;
 import javax.swing.event.TreeExpansionListener;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
@@ -43,7 +39,7 @@ public class ProfilerCallTreeWindow {
         this.project = project;
         RefreshAction refresh = new RefreshAction("Refresh", "Refresh EProfiler", AllIcons.Actions.Refresh);
         FlameDumpAction flameDumpAction = new FlameDumpAction("Dump Flame Graph", "Dump Flame Graph", AllIcons.Actions.Dump);
-        ((ToolWindowImpl) toolWindow).setTabActions(refresh, flameDumpAction);
+        ((ToolWindowImpl) toolWindow).setTitleActions(refresh, flameDumpAction);
     }
 
     private void createUIComponents() {

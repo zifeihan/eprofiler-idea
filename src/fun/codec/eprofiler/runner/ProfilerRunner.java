@@ -12,6 +12,7 @@ import com.intellij.execution.ui.RunContentDescriptor;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.SystemInfo;
+import org.apache.commons.io.FileUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -140,11 +141,12 @@ public class ProfilerRunner extends DefaultJavaProgramRunner {
 
     private void copyFlameGraph() {
 
-        String flameGraph = getClass().getClassLoader().getResource("FlameGraph/flamegraph.pl").getPath();
         try {
+            InputStream inputStream = getClass().getClassLoader().getResource("FlameGraph/flamegraph.pl").openStream();
             Files.deleteIfExists(Paths.get(flamegraph));
-
-            Files.copy(Paths.get(flameGraph), Paths.get(flamegraph));
+            File file = new File(flamegraph);
+            FileUtils.copyInputStreamToFile(inputStream, file);
+            file.setExecutable(true);
         } catch (IOException e) {
             logger.error("create flameGraph tmp file error", e);
         }
