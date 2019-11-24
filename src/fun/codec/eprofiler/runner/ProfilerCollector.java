@@ -205,10 +205,12 @@ public class ProfilerCollector implements ProjectComponent {
      */
     public void dumpFlameGraph() {
         try {
-            // svg path
-            String fileName = HOME_URL + File.separator + formatter.format(LocalDateTime.now()) + ".svg";
+            if (start) {
+                // svg path
+                String fileName = HOME_URL + File.separator + formatter.format(LocalDateTime.now()) + ".svg";
 
-            createFlameGraph(fileName);
+                createFlameGraph(fileName);
+            }
         } catch (Exception e) {
             logger.error("create flameGraph error :", e);
         }
