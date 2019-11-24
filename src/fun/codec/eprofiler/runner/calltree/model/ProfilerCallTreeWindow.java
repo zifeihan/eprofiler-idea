@@ -42,6 +42,10 @@ public class ProfilerCallTreeWindow {
         this.project = project;
         RefreshAction refresh = new RefreshAction("Refresh", "Refresh EProfiler", AllIcons.Actions.Refresh);
         ((ToolWindowImpl) toolWindow).setTabActions(refresh);
+        /*
+            不显示滚动窗口的边框
+         */
+        this.jscrollPane.setBorder(null);
     }
 
     private void createUIComponents() {
