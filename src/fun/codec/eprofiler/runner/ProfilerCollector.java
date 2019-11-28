@@ -98,7 +98,11 @@ public class ProfilerCollector implements ProjectComponent {
         /**
          * 在运行结束前再次导出火焰图
          */
-        dumpFlameGraph();
+        try {
+            dumpFlameGraph();
+        } catch (IOException e) {
+            logger.error("dumpFlameGraph error.", e);
+        }
 
         //reset the position
         this.position = 0;
@@ -209,17 +213,14 @@ public class ProfilerCollector implements ProjectComponent {
     /**
      * 导出火焰图
      */
-    public void dumpFlameGraph() {
-        try {
-            if (start) {
-                // svg path
-                String fileName = HOME_URL + File.separator + formatter.format(LocalDateTime.now()) + ".svg";
-
-                createFlameGraph(fileName);
-            }
-        } catch (Exception e) {
-            logger.error("create flameGraph error :", e);
+    public boolean dumpFlameGraph() throws IOException {
+        if (start) {
+            // svg path
+            String fileName = HOME_URL + File.separator + formatter.format(LocalDateTime.now()) + ".svg";
+            createFlameGraph(fileName);
+            return true;
         }
+        return false;
     }
 
     public void analyse(String perfFilePath) {
