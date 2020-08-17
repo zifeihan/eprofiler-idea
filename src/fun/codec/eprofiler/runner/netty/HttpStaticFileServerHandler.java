@@ -33,6 +33,7 @@ import java.net.URLDecoder;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static io.netty.handler.codec.http.HttpMethod.GET;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
@@ -270,7 +271,7 @@ public class HttpStaticFileServerHandler extends SimpleChannelInboundHandler<Ful
                 .append("<ul>")
                 .append("<li><a href=\"../\">..</a></li>\r\n");
 
-        for (File f : dir.listFiles()) {
+        for (File f : Arrays.stream(dir.listFiles()).sorted(Comparator.comparing(File::lastModified).reversed()).collect(Collectors.toList())) {
             if (f.isHidden() || !f.canRead()) {
                 continue;
             }
