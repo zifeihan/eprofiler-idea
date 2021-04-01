@@ -20,22 +20,22 @@
 ![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/20191123.png)
 ![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/20191121161627.jpg)
 
-###### 1.介绍![avatar](http://codec.fun/2019/01/07/eprofiler性能分析/image-20190107112242035.png)
+###### 1.介绍![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/image-20190107112242035.png)
 
 ###### 2.性能分析日志
 
-![avatar](http://codec.fun/2019/01/07/eprofiler性能分析/image-20190107113110577.png)
+![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/image-20190107113110577.png)
 
-![avatar](http://codec.fun/2019/01/07/eprofiler性能分析/image-20190107112710043.png)
+![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/image-20190107112710043.png)
 
 由于改日志是动态输出的，排在最前面的（百分比最高的）是当前项目消耗最高的性能点。默认5秒进行刷新输出，当点击具体的堆栈时会暂定刷新，点击刷新按钮会重新刷新分析结果日志。
 
-![avatar](http://codec.fun/2019/01/07/eprofiler性能分析/image-20190107113358277.png)
+![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/image-20190107113358277.png)
 
 下面我开始访问项目空页面：
 
-![avatar](http://codec.fun/2019/01/07/eprofiler性能分析/image-20190107113748180.png)
+![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/image-20190107113748180.png)
 
 下面数据为强制刷新空页面后的数据
 
-![avatar](http://codec.fun/2019/01/07/eprofiler性能分析/image-20190107113547534.png)
+![avatar](https://raw.githubusercontent.com/zifeihan/eprofiler-idea/master/doc/image-20190107113547534.png)
